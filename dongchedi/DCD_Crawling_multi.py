@@ -3,6 +3,8 @@ import json
 import re
 from pyppeteer import launch
 from bs4 import BeautifulSoup
+import aiofiles
+
 
 async def get_page_source(url):
     browser = await launch()
@@ -11,6 +13,7 @@ async def get_page_source(url):
     page_source = await page.content()
     await browser.close()
     return page_source
+
 
 async def scrape_dynamic_page(url, count):
     try:
@@ -21,15 +24,34 @@ async def scrape_dynamic_page(url, count):
             json_content = json_data.string
             try:
                 data = json.loads(json_content)
-                with open(f'./data{str(count)}.json', 'w', encoding='utf-8') as f:
-                    json.dump(data, f, ensure_ascii=False, indent=4)
-                print(f"JSON数据已保存到 data{str(count)}.json 文件")
+
+                view_count = data['props']['pageProps']['articleData']['data']['read_count']
+                share_count = data['props']['pageProps']['articleData']['data']['share_count']
+                comment_count = data['props']['pageProps']['comment']['count']
+                like_count = data['props']['pageProps']['articleData']['data']['digg_count']
+                author_title = data['props']['pageProps']['articleData']['data']['motor_profile_info']['name']
+                author_id = data['props']['pageProps']['articleData']['data']['motor_profile_info']['user_id']
+
+                temp = {
+                    "平台": "懂车帝",
+                    "浏览量": view_count,
+                    "转发量": share_count,
+                    "回复量": comment_count,
+                    "点赞量": like_count,
+                    "作者id": author_id,
+                    "作者": author_title
+                }
+
+                async with aiofiles.open('data.json', 'a', encoding='utf-8') as f:
+                    await f.write(json.dumps(temp, ensure_ascii=False) + '\n')
+
             except json.JSONDecodeError:
                 print("JSON解析失败")
         else:
             print("未找到包含JSON数据的标签")
     except Exception as e:
         print("爬取过程中出现错误:", e)
+
 
 def extract_group_id(url):
     pattern = r"group_id=(\d+)"
@@ -39,6 +61,7 @@ def extract_group_id(url):
         return group_id
     else:
         return None
+
 
 async def main():
     base_url = "https://www.dongchedi.com/ugc/article/"
@@ -61,6 +84,7 @@ async def main():
         tasks.append(task)
 
     await asyncio.gather(*tasks)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
