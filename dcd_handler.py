@@ -38,6 +38,11 @@ async def scrape_dcd_dynamic_page(url):
                     like_count = data['props']['pageProps']['articleData']['data']['digg_count']
                     author_title = data['props']['pageProps']['articleData']['data']['motor_profile_info']['name']
                     author_id = data['props']['pageProps']['articleData']['data']['motor_profile_info']['user_id']
+                    if data['props']['pageProps']['articleData']['data']['selected_tips']:
+                        recommand = 'True'
+                    else:
+                        recommand = 'False'
+
 
                     temp = {
                         "平台": "懂车帝",
@@ -45,6 +50,7 @@ async def scrape_dcd_dynamic_page(url):
                         "转发量": share_count,
                         "回复量": comment_count,
                         "点赞量": like_count,
+                        "加精": recommand,
                         "作者id": author_id,
                         "作者": author_title
                     }

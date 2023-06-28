@@ -1,27 +1,27 @@
 from bs4 import BeautifulSoup
 import json
 
-with open("./17.html") as file:
+with open("./yiche/data1.html") as file:
     html=file.read()
 soup = BeautifulSoup(html,'html.parser')
 
-# 找到所有的<script>标签
-script_tags = soup.find_all('script')
+# 提取评论数
+comment_element = soup.find('li', class_='news-detail-position-pinglun')
+comment_number = comment_element.find('a').text.strip()
+print('评论数:', comment_number)
 
-# 遍历所有的<script>标签
-for script_tag in script_tags:
-    script_content = script_tag.string
-    if script_content is not None and '__TOPICINFO__' in script_content:
-        # 使用字符串操作提取topicMemberId和topicMemberName的值
-        topic_member_id_start = script_content.find("topicMemberId: ") + len("topicMemberId: ")
-        topic_member_id_end = script_content.find(",", topic_member_id_start)
-        topic_member_id = script_content[topic_member_id_start:topic_member_id_end].strip()
+# 提取点赞数
+like_element = soup.find('li', class_='news-detail-position-dianzan')
+like_number = like_element.find('a').text.strip()
+print('点赞数:', like_number)
 
-        topic_member_name_start = script_content.find("topicMemberName: '") + len("topicMemberName: '")
-        topic_member_name_end = script_content.find("'", topic_member_name_start)
-        topic_member_name = script_content[topic_member_name_start:topic_member_name_end]
+authors = soup.find_all('div', class_='author-box')
 
-        # 打印结果
-        print("topicMemberId:", topic_member_id)
-        print("topicMemberName:", topic_member_name)
-        break
+
+for author in authors:
+    author_name = author.find('p', class_='author-name').text.strip()  # 提取作者名字
+    author_id = author.find('a', class_='button attention-button').get('data-id')  # 提取 data-id 属性
+    author_homepage = f"https://i.yiche.com/u{author_id}/!article/"
+    print('作者名字:', author_name)
+    print('作者 ID:', author_id)
+    print(author_homepage)

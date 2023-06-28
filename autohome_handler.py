@@ -1,11 +1,14 @@
 import concurrent.futures
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
+chrome_options = Options()
+chrome_options.add_argument('--blink-settings=imagesEnabled=false')
 
 def scrape_autohome_page_info(url):
-    driver = webdriver.Chrome()
+    driver = webdriver.Chrome(options=chrome_options)
 
     try:
         driver.get(url)
@@ -38,10 +41,14 @@ def scrape_autohome_page_info(url):
         view_number = view_span.text if view_span else '0'
         reply_number = reply_span.text if reply_span else '0'
         praise_number = praise_span.text if praise_span and praise_span.text else '0'
-        with open(f'{view_number}.html', 'w', encoding='utf-8') as f:
-            f.write(page_source)
         author_id = topic_member_id
         author_title = topic_member_name
+
+        
+        if soup.find_all('div', class_='stamp orange'):
+            recommand = 'True'
+        else:
+            recommand = 'False'
 
         driver.quit()
 
@@ -50,6 +57,7 @@ def scrape_autohome_page_info(url):
             "浏览量": view_number,
             "回复量": reply_number,
             "点赞量": praise_number,
+            "加精推荐": recommand,
             "作者id": author_id,
             "作者": author_title
         }
