@@ -10,6 +10,7 @@ chrome_options.add_argument('--blink-settings=imagesEnabled=false')
 
 def scrape_autohome_page_info(url):
     driver = webdriver.Chrome(options=chrome_options)
+    driver.minimize_window()
 
     try:
         driver.get(url)
