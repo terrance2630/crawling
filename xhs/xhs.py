@@ -7,19 +7,19 @@ from concurrent.futures import ThreadPoolExecutor
 
 # 设置请求头和cookies
 def setup_request():
-    cookie = {'timestamp2': '1688092677969'}
+    cookie = {'timestamp2': '1688106257660'}
     header = {
         'authority': 'www.xiaohongshu.com',
         'accept': 'text/html, application/xhtml+xml, application/xml;q=0.9, image/avif, image/webp, image/apng,*/*;q=0.8, application/signed-exchange;v=b3;q=0.9',
         'accept-language': 'zh-TW, zh; q=0.9, en-US; q=0.8, en; q=0.7, zh-CN; q=0.6',
         'cache-control': 'no-cache',
         'pragma': 'no-cache',
-        'sec-ch-ua': '"Not?A_Brand";v="g", "Chromium"; v="108", "Google Chrome"; v="108"',
-        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua': '"Not.A/Brand";v="8", "Chromium";v="114", "Google Chrome";v="114"',
+        'sec-ch-ua-Mobile': '?0',
         'sec-ch-ua-platform': '"macOS"',
-        'sec-fetch-dest': 'document',
+        'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'none',
+        'sec-fetch-site': 'same-site',
         'sec-fetch-user': '?1',
         'upgrade-insecure-requests': '1',
         'user-agent':  'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36'
