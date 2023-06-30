@@ -6,11 +6,13 @@ from dcd_handler import scrape_dcd_urls
 from autohome_handler import scrape_autohome_urls
 from yiche_handler import scrape_yiche_urls
 from xhs_handler import process_urls
+from toutiao_handler import scrape_toutiao_urls  # 引入头条爬取函数
 
 dcd_pattern = re.compile(r"(www\.)?dcdapp\.com|(api\.)?dcarapi\.com")
 autohome_pattern = re.compile(r"(www\.)?autohome\.com\.cn")
 yiche_pattern = re.compile(r"(www\.)?yiche\.com")
 xhs_pattern = re.compile((r"(www\.)?xiaohongshu\.com"))
+toutiao_pattern = re.compile(r"(www\.)?toutiao\.com")  # 定义头条的正则表达式
 
 def analyze_url(url):
     if dcd_pattern.search(url):
@@ -21,6 +23,8 @@ def analyze_url(url):
         return "yiche"
     elif xhs_pattern.search(url):
         return "xhs"
+    elif toutiao_pattern.search(url):  # 添加头条的匹配
+        return "toutiao"
     else:
         return None
 
@@ -29,6 +33,7 @@ async def process_batch(urls):
     autohome_urls = []
     yiche_urls = []
     xhs_urls = []
+    toutiao_urls = []  # 定义头条 URL 列表
 
     for url in urls:
         component = analyze_url(url)
@@ -40,8 +45,8 @@ async def process_batch(urls):
             yiche_urls.append(url)
         elif component == "xhs":
             xhs_urls.append(url)
-
-# 处理 dcd_urls、autohome_urls 和 yiche_urls
+        elif component == "toutiao":  # 添加头条 URL
+            toutiao_urls.append(url)
 
     loop = asyncio.get_event_loop()
 
@@ -49,13 +54,15 @@ async def process_batch(urls):
     autohome_task = loop.run_in_executor(None, scrape_autohome_urls, autohome_urls)
     yiche_task = loop.run_in_executor(None, scrape_yiche_urls, yiche_urls)
     xhs_task = loop.run_in_executor(None, process_urls, xhs_urls)
+    toutiao_task = loop.run_in_executor(None, scrape_toutiao_urls, toutiao_urls)  # 添加头条爬取任务
 
     dcd_results = await dcd_task
     autohome_results = await autohome_task
     yiche_results = await yiche_task
     xhs_results = await xhs_task
+    toutiao_results = await toutiao_task  # 等待头条爬取任务完成
 
-    all_results = dcd_results + autohome_results + yiche_results + xhs_results
+    all_results = dcd_results + autohome_results + yiche_results + xhs_results + toutiao_results  # 将头条爬取结果加入总结果
 
     with open('data.json', 'a', encoding='utf-8') as f:
         for result in all_results:
@@ -75,7 +82,9 @@ async def main():
         "https://www.xiaohongshu.com/explore/64884937000000000800f53a?m_source=baidusem",
         "https://www.xiaohongshu.com/explore/641c2d2b0000000013002ad8?m_source=baidusem",
         "https://www.xiaohongshu.com/explore/644b96b3000000000800cd18?m_source=baidusem",
-        # 添加其他网址
+        # 添加头条的 URL
+        "https://www.toutiao.com/article/7235891710436459063/?channel=&source=search_tab",
+        "https://www.toutiao.com/article/7249150127242363447/?channel=&source=search_tab",
     ]
 
     batch_size = 10  # 每个批次处理的 URL 数量
