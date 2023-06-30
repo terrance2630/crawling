@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 chrome_options = Options()
+
 chrome_options.add_argument('--blink-settings=imagesEnabled=false')
 
 def scrape_autohome_page_info(url):
@@ -14,8 +15,6 @@ def scrape_autohome_page_info(url):
         driver.get(url)
         page_source = driver.page_source
         
-        
-
         soup = BeautifulSoup(page_source, 'html.parser')
 
         view_span = soup.select_one('.post-handle-view strong')
@@ -54,12 +53,12 @@ def scrape_autohome_page_info(url):
 
         temp = {
             "平台": "汽车之家",
-            "浏览量": view_number,
-            "回复量": reply_number,
-            "点赞量": praise_number,
-            "加精推荐": recommand,
-            "作者id": author_id,
-            "作者": author_title
+            "浏览量": str(view_number),
+            "回复量": str(reply_number),
+            "点赞量": str(praise_number),
+            "加精推荐": str(recommand),
+            "作者id": str(author_id),
+            "作者": str(author_title)
         }
 
         return temp

@@ -5,9 +5,12 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 import json
 
+chrome_options = Options()
+chrome_options.add_argument('--headless')
+chrome_options.add_argument('--blink-settings=imagesEnabled=false')
+
 def scrape_yiche_page_info(url):
-    chrome_options = Options()
-    chrome_options.add_argument('--blink-settings=imagesEnabled=false')
+
 
     driver = webdriver.Chrome(options=chrome_options)
 

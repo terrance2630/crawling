@@ -46,13 +46,13 @@ async def scrape_dcd_dynamic_page(url):
 
                     temp = {
                         "平台": "懂车帝",
-                        "浏览量": view_count,
-                        "转发量": share_count,
-                        "回复量": comment_count,
-                        "点赞量": like_count,
-                        "加精": recommand,
-                        "作者id": author_id,
-                        "作者": author_title
+                        "浏览量": str(view_count),
+                        "转发量": str(share_count),
+                        "回复量": str(comment_count),
+                        "点赞量": str(like_count),
+                        "加精": str(recommand),
+                        "作者id": str(author_id),
+                        "作者": str(author_title)
                     }
 
                     return temp
