@@ -43,7 +43,6 @@ async def scrape_dcd_dynamic_page(url):
                     else:
                         recommand = 'False'
 
-
                     temp = {
                         "平台": "懂车帝",
                         "浏览量": str(view_count),
@@ -52,7 +51,8 @@ async def scrape_dcd_dynamic_page(url):
                         "点赞量": str(like_count),
                         "加精": str(recommand),
                         "作者id": str(author_id),
-                        "作者": str(author_title)
+                        "作者": str(author_title),
+                        "文章": str(url)
                     }
 
                     return temp
@@ -62,7 +62,7 @@ async def scrape_dcd_dynamic_page(url):
             else:
                 print("未找到包含JSON数据的标签")
     except Exception as e:
-        print("爬取过程中出现错误:", e)
+        print("懂车帝爬取过程中出现错误:", e)
     return None
 
 

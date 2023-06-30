@@ -5,10 +5,12 @@ from tqdm import tqdm
 from dcd_handler import scrape_dcd_urls
 from autohome_handler import scrape_autohome_urls
 from yiche_handler import scrape_yiche_urls
+from xhs_handler import process_urls
 
 dcd_pattern = re.compile(r"(www\.)?dcdapp\.com|(api\.)?dcarapi\.com")
 autohome_pattern = re.compile(r"(www\.)?autohome\.com\.cn")
 yiche_pattern = re.compile(r"(www\.)?yiche\.com")
+xhs_pattern = re.compile((r"(www\.)?xiaohongshu\.com"))
 
 def analyze_url(url):
     if dcd_pattern.search(url):
@@ -17,6 +19,8 @@ def analyze_url(url):
         return "autohome"
     elif yiche_pattern.search(url):
         return "yiche"
+    elif xhs_pattern.search(url):
+        return "xhs"
     else:
         return None
 
@@ -24,6 +28,7 @@ async def process_batch(urls):
     dcd_urls = []
     autohome_urls = []
     yiche_urls = []
+    xhs_urls = []
 
     for url in urls:
         component = analyze_url(url)
@@ -33,6 +38,8 @@ async def process_batch(urls):
             autohome_urls.append(url)
         elif component == "yiche":
             yiche_urls.append(url)
+        elif component == "xhs":
+            xhs_urls.append(url)
 
 # 处理 dcd_urls、autohome_urls 和 yiche_urls
 
@@ -41,12 +48,14 @@ async def process_batch(urls):
     dcd_task = scrape_dcd_urls(dcd_urls)
     autohome_task = loop.run_in_executor(None, scrape_autohome_urls, autohome_urls)
     yiche_task = loop.run_in_executor(None, scrape_yiche_urls, yiche_urls)
+    xhs_task = loop.run_in_executor(None, process_urls, xhs_urls)
 
     dcd_results = await dcd_task
     autohome_results = await autohome_task
     yiche_results = await yiche_task
+    xhs_results = await xhs_task
 
-    all_results = dcd_results + autohome_results + yiche_results
+    all_results = dcd_results + autohome_results + yiche_results + xhs_results
 
     with open('data.json', 'a', encoding='utf-8') as f:
         for result in all_results:
@@ -61,7 +70,11 @@ async def main():
         "https://club.autohome.com.cn/bbs/thread-c-3495-105732139-1.html",
         "https://club.autohome.com.cn/bbs/thread-c-3495-105715932-1.html",
         "https://club.autohome.com.cn/bbs/thread-c-6960-105709282-1.html",
-        "https://news.yiche.com/xinchexiaoxi/20230521/0081822289.html"
+        "https://news.yiche.com/xinchexiaoxi/20230521/0081822289.html",
+        'https://news.yiche.com/xinchexiaoxi/20230521/0081822289.html',
+        "https://www.xiaohongshu.com/explore/64884937000000000800f53a?m_source=baidusem",
+        "https://www.xiaohongshu.com/explore/641c2d2b0000000013002ad8?m_source=baidusem",
+        "https://www.xiaohongshu.com/explore/644b96b3000000000800cd18?m_source=baidusem",
         # 添加其他网址
     ]
 

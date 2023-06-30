@@ -45,15 +45,16 @@ def scrape_yiche_page_info(url):
 
         result = {
             '平台': "易车",
-            '评论数': comment_number,
-            '点赞数': like_number,
-            '作者列表': author_list
+            '评论数': str(comment_number),
+            '点赞数': str(like_number),
+            '作者列表': str(author_list),
+            "文章": str(url)
         }
 
         return result
 
     except Exception as e:
-        print("在爬取过程中出现错误:", e)
+        print("易车在爬取过程中出现错误:", e)
         driver.quit()
         return None
 
@@ -70,3 +71,4 @@ def scrape_yiche_urls(urls):
                 pbar.update(1)
 
     return result
+

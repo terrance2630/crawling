@@ -58,13 +58,14 @@ def scrape_autohome_page_info(url):
             "点赞量": str(praise_number),
             "加精推荐": str(recommand),
             "作者id": str(author_id),
-            "作者": str(author_title)
+            "作者": str(author_title),
+            "文章": str(url)
         }
 
         return temp
 
     except Exception as e:
-        print("在爬取过程中出现错误:", e)
+        print("汽车之家在爬取过程中出现错误:", e)
         driver.quit()
         return None
 
