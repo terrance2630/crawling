@@ -3,7 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from bs4 import BeautifulSoup
-from tqdm import tqdm
+#from tqdm import tqdm
 
 chrome_options = Options()
 chrome_options.add_argument('--blink-settings=imagesEnabled=false')
@@ -11,9 +11,9 @@ chrome_options.add_argument('--blink-settings=imagesEnabled=false')
 def scrape_autohome_page_info(url):
     with webdriver.Chrome(options=chrome_options) as driver:
         try:
-            driver.minimize_window()
+            #driver.minimize_window()
             driver.get(url)
-            WebDriverWait(driver, 15)
+            
             
             soup = BeautifulSoup(driver.page_source, 'html.parser')
 
@@ -47,5 +47,5 @@ def scrape_autohome_page_info(url):
 
 def scrape_autohome_urls(urls):
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        results = list(tqdm(executor.map(scrape_autohome_page_info, urls), total=len(urls), desc="汽车之家进度"))
+        results = list(executor.map(scrape_autohome_page_info, urls))
     return [result for result in results if result]  # 过滤掉None值

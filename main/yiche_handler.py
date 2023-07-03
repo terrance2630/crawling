@@ -2,8 +2,8 @@ import concurrent.futures
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
-from tqdm import tqdm
-import json
+#from tqdm import tqdm
+
 
 chrome_options = Options()
 chrome_options.add_argument('--headless')
@@ -42,5 +42,5 @@ def scrape_yiche_page_info(url):
 
 def scrape_yiche_urls(urls):
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        results = list(tqdm(executor.map(scrape_yiche_page_info, urls), total=len(urls), desc="易车进度"))
+        results = list(executor.map(scrape_yiche_page_info, urls))
     return [result for result in results if result]  # 过滤掉None值

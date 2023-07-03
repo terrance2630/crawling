@@ -4,8 +4,7 @@ import concurrent.futures
 import re
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
-from tqdm import tqdm
-
+# from tqdm import tqdm
 
 
 # 设置请求头和cookies
@@ -101,9 +100,9 @@ def scrape_xhs_urls(urls):
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = [executor.submit(main, url, header, cookie) for url in urls]
 
-        with tqdm(total=len(futures), desc="小红书进度") as pbar:
-            for future in concurrent.futures.as_completed(futures):
-                results.append(future.result())
-                pbar.update(1)
+        #with tqdm(total=len(futures), desc="小红书进度") as pbar:
+        for future in concurrent.futures.as_completed(futures):
+            results.append(future.result())
+                #pbar.update(1)
     
     return results

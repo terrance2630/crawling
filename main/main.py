@@ -1,6 +1,7 @@
 import asyncio
 import json
 import re
+from tqdm import tqdm
 from dcd_handler import scrape_dcd_urls
 from autohome_handler import scrape_autohome_urls
 from yiche_handler import scrape_yiche_urls
@@ -40,21 +41,28 @@ async def process_batch(urls, title):
             json.dump(result, f, ensure_ascii=False)
             f.write('\n')
 
+    # 返回处理的 URL 数量
+    return len(urls)
+
 async def main():
     # 从外部文件读取URLs
     with open("urls.txt", "r") as f:
         urls = [url.strip() for url in f.readlines()]
 
-    batch_size = 20
+    batch_size = 5
     num_batches = len(urls) // batch_size + (len(urls) % batch_size > 0)
     title = str(datetime.now().strftime("%m-%d %H:%M"))+".json"
     
+    pbar = tqdm(total=len(urls), desc="处理 URL 进度")
+
     for batch_index in range(num_batches):
         start_index = batch_index * batch_size
         end_index = start_index + batch_size
         batch_urls = urls[start_index:end_index]
-        await process_batch(batch_urls, title)
+        processed_url_count = await process_batch(batch_urls, title)
+        pbar.update(processed_url_count)
 
+    pbar.close()
     print(f"数据已保存到 {title} 文件")
 
 if __name__ == "__main__":

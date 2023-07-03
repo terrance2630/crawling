@@ -5,19 +5,7 @@ import json
 import requests
 
 cookies = {
-    'CIGUID': 'ec5339c8-0db3-4e29-8b6b-67bdff0ccb14',
-    'CIGDCID': 'x4fbmGQCreeHFh6NnEw28MY5jD5p2EXt',
-    'auto_id': 'd14988c50ba839e18a9d96072167a910',
-    'UserGuid': 'ec5339c8-0db3-4e29-8b6b-67bdff0ccb14',
-    'Hm_lvt_610fee5a506c80c9e1a46aa9a2de2e44': '1687923640',
-    'selectcity': '110100',
-    'selectcityid': '201',
-    'selectcityName': '%E5%8C%97%E4%BA%AC',
-    'locatecity': '110100',
-    'bitauto_ipregion': '103.108.231.76%3A%E5%8C%97%E4%BA%AC%E5%B8%82%3B201%2C%E5%8C%97%E4%BA%AC%2Cbeijing',
-    'isWebP': 'true',
-    'report-cookie-id': '249625994_1688353425149',
-    'Hm_lpvt_610fee5a506c80c9e1a46aa9a2de2e44': '1688353430',
+
 }
 
 headers = {
@@ -42,7 +30,7 @@ def scrape_yiche_page_info(url):
 
 
     try:
-        response = requests.get('url', cookies=cookies, headers=headers)
+        response = requests.get(url, cookies=cookies, headers=headers)
 
         soup = BeautifulSoup(response.text, 'html.parser')
 

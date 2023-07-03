@@ -15,7 +15,7 @@ def scrape_toutiao_page_info(url):
     with webdriver.Chrome(options=chrome_options) as driver:
         try:
             driver.get(url)
-            WebDriverWait(driver, 60).until(
+            WebDriverWait(driver, 15).until(
                 EC.presence_of_element_located(
                     (By.CSS_SELECTOR, "#root > div.article-detail-container > div.left-sidebar > div > div:nth-child(2) > div")
                 )

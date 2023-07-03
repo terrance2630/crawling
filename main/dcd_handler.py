@@ -1,7 +1,7 @@
 import json
 import re
 from bs4 import BeautifulSoup
-from tqdm import tqdm
+#from tqdm import tqdm
 import concurrent.futures
 import requests
 
@@ -104,13 +104,13 @@ def scrape_dcd_urls(urls):
     tasks = [(scrape_dcd_dynamic_page, f"https://www.dongchedi.com/ugc/article/{extract_group_id(url)}") for url in urls if extract_group_id(url) is not None]
 
     results = []
-    with tqdm(total=len(tasks), desc="懂车帝平台进度") as pbar:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [executor.submit(func, arg) for func, arg in tasks]
-            for future in concurrent.futures.as_completed(futures):
-                result = future.result()
-                if result is not None:
-                    results.append(result)
-                pbar.update(1)
+    #with tqdm(total=len(tasks), desc="懂车帝平台进度") as pbar:
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(func, arg) for func, arg in tasks]
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            if result is not None:
+                results.append(result)
+                #pbar.update(1)
 
     return results

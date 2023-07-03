@@ -2,13 +2,12 @@ import concurrent.futures
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
-from tqdm import tqdm
+#from tqdm import tqdm
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 chrome_options = Options()
-chrome_options.add_argument('--headless')
 chrome_options.add_argument('--blink-settings=imagesEnabled=false')
 
 def scrape_toutiao_page_info(url):
@@ -16,20 +15,23 @@ def scrape_toutiao_page_info(url):
 
     try:
         driver.get(url)
-        WebDriverWait(driver, 15).until(
+        WebDriverWait(driver, 60).until(
             EC.presence_of_element_located(
                 (By.CSS_SELECTOR, "#root > div.article-detail-container > div.left-sidebar > div > div:nth-child(2) > div")
             )
         )
         soup = BeautifulSoup(driver.page_source, 'html.parser')
-
+        driver.quit()
         # 找到并打印点赞数量
         like_count_div = soup.find('div', class_='digg-icon')
         like_count = like_count_div.find_next_sibling('span').text
+        like_count = "0" if like_count == "赞" else like_count
+        
 
         # 找到并打印评论数量
         comment_count_div = soup.find('div', class_='detail-interaction-comment')
         comment_count = comment_count_div.find('span').text
+        comment_count = "0" if comment_count == "评论" else comment_count
 
         # 找到并打印用户主页和用户名
         user_meta_div = soup.find('div', class_='article-meta')
@@ -37,7 +39,7 @@ def scrape_toutiao_page_info(url):
         user_homepage = 'www.toutiao.com/'+user_name_span.find('a')['href']
         user_name = user_name_span.text.strip()
 
-        driver.quit()
+        
 
         result = {
             '平台': "头条",
@@ -51,10 +53,9 @@ def scrape_toutiao_page_info(url):
         return result
 
     except Exception as e:
-        print("头条在爬取过程中出现错误:", e)
+        print("url: ", url + " 头条在爬取过程中出现错误:", e)
         driver.quit()
         return None
-
 
 def scrape_toutiao_urls(urls):
     result = []
@@ -62,9 +63,9 @@ def scrape_toutiao_urls(urls):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [executor.submit(scrape_toutiao_page_info, url) for url in urls]
 
-        with tqdm(total=len(futures), desc="头条进度") as pbar:
-            for future in concurrent.futures.as_completed(futures):
-                result.append(future.result())
-                pbar.update(1)
+        #with tqdm(total=len(futures), desc="头条进度") as pbar:
+        for future in concurrent.futures.as_completed(futures):
+            result.append(future.result())
+                #pbar.update(1)
 
     return result
