@@ -1,12 +1,15 @@
 import asyncio
 import json
 import re
+import time
+
 from tqdm import tqdm
 from dcd_handler import scrape_dcd_urls
 from autohome_handler import scrape_autohome_urls
 from yiche_handler import scrape_yiche_urls
 from xhs_handler import process_urls
-from toutiao_handler import scrape_toutiao_urls  # 引入头条爬取函数
+from toutiao_handler import scrape_toutiao_urls
+from datetime import datetime  
 
 dcd_pattern = re.compile(r"(www\.)?dcdapp\.com|(api\.)?dcarapi\.com")
 autohome_pattern = re.compile(r"(www\.)?autohome\.com\.cn")
@@ -28,7 +31,7 @@ def analyze_url(url):
     else:
         return None
 
-async def process_batch(urls):
+async def process_batch(urls, title):
     dcd_urls = []
     autohome_urls = []
     yiche_urls = []
@@ -50,7 +53,7 @@ async def process_batch(urls):
 
     loop = asyncio.get_event_loop()
 
-    dcd_task = scrape_dcd_urls(dcd_urls)
+    dcd_task = loop.run_in_executor(None, scrape_dcd_urls, dcd_urls)
     autohome_task = loop.run_in_executor(None, scrape_autohome_urls, autohome_urls)
     yiche_task = loop.run_in_executor(None, scrape_yiche_urls, yiche_urls)
     xhs_task = loop.run_in_executor(None, process_urls, xhs_urls)
@@ -63,8 +66,8 @@ async def process_batch(urls):
     toutiao_results = await toutiao_task  # 等待头条爬取任务完成
 
     all_results = dcd_results + autohome_results + yiche_results + xhs_results + toutiao_results  # 将头条爬取结果加入总结果
-
-    with open('data.json', 'a', encoding='utf-8') as f:
+    
+    with open(title, 'a', encoding='utf-8') as f:
         for result in all_results:
             json.dump(result, f, ensure_ascii=False)
             f.write('\n')
@@ -78,25 +81,27 @@ async def main():
         "https://club.autohome.com.cn/bbs/thread-c-3495-105715932-1.html",
         "https://club.autohome.com.cn/bbs/thread-c-6960-105709282-1.html",
         "https://news.yiche.com/xinchexiaoxi/20230521/0081822289.html",
-        'https://news.yiche.com/xinchexiaoxi/20230521/0081822289.html',
+        'https://news.yiche.com/xinchexiaoxi/20230615/1082724996.html',
         "https://www.xiaohongshu.com/explore/64884937000000000800f53a?m_source=baidusem",
         "https://www.xiaohongshu.com/explore/641c2d2b0000000013002ad8?m_source=baidusem",
         "https://www.xiaohongshu.com/explore/644b96b3000000000800cd18?m_source=baidusem",
         # 添加头条的 URL
         "https://www.toutiao.com/article/7235891710436459063/?channel=&source=search_tab",
         "https://www.toutiao.com/article/7249150127242363447/?channel=&source=search_tab",
+        "https://club.autohome.com.cn/bbs/thread/8f0903df79801be1/105449645-1.html#pvareaid=6830287",
+        
     ]
 
     batch_size = 10  # 每个批次处理的 URL 数量
     num_batches = len(urls) // batch_size + (len(urls) % batch_size > 0)
-
+    title = str(datetime.now().strftime("%m-%d-%H-%M"))+".json"
     for batch_index in range(num_batches):
         start_index = batch_index * batch_size
         end_index = start_index + batch_size
         batch_urls = urls[start_index:end_index]
-        await process_batch(batch_urls)
+        await process_batch(batch_urls, title)
 
-    print("数据已保存到 data.json 文件")
+    print(f"数据已保存到 {title} 文件")
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()

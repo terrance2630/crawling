@@ -1,9 +1,6 @@
 import concurrent.futures
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
@@ -17,7 +14,6 @@ def scrape_autohome_page_info(url):
 
     try:
         driver.get(url)
-        WebDriverWait(driver, 15)
         page_source = driver.page_source
         
         soup = BeautifulSoup(page_source, 'html.parser')
@@ -49,7 +45,7 @@ def scrape_autohome_page_info(url):
         author_title = topic_member_name
 
         
-        if soup.find_all('div', class_='stamp orange activate'):
+        if soup.find_all('div', class_='stamp orange'):
             recommand = 'True'
         else:
             recommand = 'False'

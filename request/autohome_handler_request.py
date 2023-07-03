@@ -1,26 +1,51 @@
 import concurrent.futures
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+import requests
 
-chrome_options = Options()
+cookies = {
+    'fvlid': '1687835308440U2rirn6ip9',
+    'sessionid': 'F2F81D7E-B512-4E23-A6F3-1B87BBE2734F%7C%7C2023-06-27+11%3A08%3A47.499%7C%7C0',
+    'autoid': '80c2bd907ad9987880b98b352d410cce',
+    'area': '999999',
+    '__ah_uuid_ng': 'c_F2F81D7E-B512-4E23-A6F3-1B87BBE2734F',
+    'historybbsName4': 'c-6960%7C%E5%B9%BF%E6%B1%BD%E4%BC%A0%E7%A5%BAA79',
+    'sessionip': '103.108.231.76',
+    'v_no': '1',
+    'visit_info_ad': 'F2F81D7E-B512-4E23-A6F3-1B87BBE2734F||1F9CD0C9-39C3-4F63-9CBF-2F5B3047B9CC||-1||-1||1',
+    'ref': '0%7C0%7C0%7C0%7C2023-06-30+17%3A49%3A11.941%7C2023-06-27+11%3A08%3A47.499',
+    'ahrlid': '1688118549093v3M4cwEEHb-1688118553111',
+}
 
-chrome_options.add_argument('--blink-settings=imagesEnabled=false')
+headers = {
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    'Cache-Control': 'max-age=0',
+    'Connection': 'keep-alive',
+    # 'Cookie': 'fvlid=1687835308440U2rirn6ip9; sessionid=F2F81D7E-B512-4E23-A6F3-1B87BBE2734F%7C%7C2023-06-27+11%3A08%3A47.499%7C%7C0; autoid=80c2bd907ad9987880b98b352d410cce; area=999999; __ah_uuid_ng=c_F2F81D7E-B512-4E23-A6F3-1B87BBE2734F; historybbsName4=c-6960%7C%E5%B9%BF%E6%B1%BD%E4%BC%A0%E7%A5%BAA79; sessionip=103.108.231.76; v_no=1; visit_info_ad=F2F81D7E-B512-4E23-A6F3-1B87BBE2734F||1F9CD0C9-39C3-4F63-9CBF-2F5B3047B9CC||-1||-1||1; ref=0%7C0%7C0%7C0%7C2023-06-30+17%3A49%3A11.941%7C2023-06-27+11%3A08%3A47.499; ahrlid=1688118549093v3M4cwEEHb-1688118553111',
+    'If-Modified-Since': 'Fri, 30 Jun 2023 07:29:20 GMT',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Upgrade-Insecure-Requests': '1',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+    'sec-ch-ua': '"Not.A/Brand";v="8", "Chromium";v="114", "Google Chrome";v="114"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+}
+
 
 def scrape_autohome_page_info(url):
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.minimize_window()
-
+    
     try:
-        driver.get(url)
-        WebDriverWait(driver, 15)
-        page_source = driver.page_source
+        response = requests.get(
+            url,
+            cookies=cookies,
+            headers=headers,
+)
         
-        soup = BeautifulSoup(page_source, 'html.parser')
+        soup = BeautifulSoup(response.text, 'html.parser')
 
         view_span = soup.select_one('.post-handle-view strong')
         reply_span = soup.select_one('.post-handle-reply strong')
@@ -49,12 +74,11 @@ def scrape_autohome_page_info(url):
         author_title = topic_member_name
 
         
-        if soup.find_all('div', class_='stamp orange activate'):
+        if soup.find_all('div', class_='stamp orange'):
             recommand = 'True'
         else:
             recommand = 'False'
 
-        driver.quit()
 
         temp = {
             "平台": "汽车之家",
@@ -71,7 +95,7 @@ def scrape_autohome_page_info(url):
 
     except Exception as e:
         print("汽车之家在爬取过程中出现错误:", e)
-        driver.quit()
+        
         return None
 
 
