@@ -94,13 +94,12 @@ def scrape_dcd_dynamic_page(url):
     return None
 
 def extract_group_id(url):
-    pattern = r"group_id=(\d+)"
+    pattern = r"(?:group_id|/article)/(\d+)"
     match = re.search(pattern, url)
     if match:
         group_id = match.group(1)
         return group_id
-    else:
-        return None
+    return None
 
 def scrape_dcd_urls(urls):
     tasks = []

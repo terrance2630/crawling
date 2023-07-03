@@ -11,7 +11,7 @@ from xhs_handler import process_urls
 from toutiao_handler import scrape_toutiao_urls
 from datetime import datetime  
 
-dcd_pattern = re.compile(r"(www\.)?dcdapp\.com|(api\.)?dcarapi\.com")
+dcd_pattern = re.compile(r"(www\.)?dcdapp\.com|(api\.)?dcarapi\.com|(www\.)?dongchedi\.com")
 autohome_pattern = re.compile(r"(www\.)?autohome\.com\.cn")
 yiche_pattern = re.compile(r"(www\.)?yiche\.com")
 xhs_pattern = re.compile((r"(www\.)?xiaohongshu\.com"))
@@ -89,12 +89,13 @@ async def main():
         "https://www.toutiao.com/article/7235891710436459063/?channel=&source=search_tab",
         "https://www.toutiao.com/article/7249150127242363447/?channel=&source=search_tab",
         "https://club.autohome.com.cn/bbs/thread/8f0903df79801be1/105449645-1.html#pvareaid=6830287",
-        
+        "https://www.dongchedi.com/ugc/article/1710163006642191",
+
     ]
 
-    batch_size = 10  # 每个批次处理的 URL 数量
+    batch_size = 20  # 每个批次处理的 URL 数量
     num_batches = len(urls) // batch_size + (len(urls) % batch_size > 0)
-    title = str(datetime.now().strftime("%m-%d-%H-%M"))+".json"
+    title = str(datetime.now().strftime("%m-%d-%H:%M"))+".json"
     for batch_index in range(num_batches):
         start_index = batch_index * batch_size
         end_index = start_index + batch_size
