@@ -1,89 +1,51 @@
 import concurrent.futures
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 chrome_options = Options()
-
 chrome_options.add_argument('--blink-settings=imagesEnabled=false')
 
 def scrape_autohome_page_info(url):
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.minimize_window()
+    with webdriver.Chrome(options=chrome_options) as driver:
+        try:
+            driver.minimize_window()
+            driver.get(url)
+            WebDriverWait(driver, 15)
+            
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
 
-    try:
-        driver.get(url)
-        WebDriverWait(driver, 15)
-        page_source = driver.page_source
-        
-        soup = BeautifulSoup(page_source, 'html.parser')
+            view_number = soup.select_one('.post-handle-view strong')
+            reply_number = soup.select_one('.post-handle-reply strong')
+            praise_number = soup.select_one('.post-assist-praise strong')
 
-        view_span = soup.select_one('.post-handle-view strong')
-        reply_span = soup.select_one('.post-handle-reply strong')
-        praise_span = soup.select_one('.post-assist-praise strong')
-        # 找到所有的<script>标签
-        script_tags = soup.find_all('script')
+            script_tags = soup.find_all('script')
+            for script_tag in script_tags:
+                script_content = script_tag.string
+                if script_content and '__TOPICINFO__' in script_content:
+                    topic_member_id = script_content.split("topicMemberId: ",1)[1].split(",")[0].strip()
+                    topic_member_name = script_content.split("topicMemberName: '",1)[1].split("'")[0]
 
-        # 遍历所有的<script>标签
-        for script_tag in script_tags:
-            script_content = script_tag.string
-            if script_content is not None and '__TOPICINFO__' in script_content:
-                # 使用字符串操作提取topicMemberId和topicMemberName的值
-                topic_member_id_start = script_content.find("topicMemberId: ") + len("topicMemberId: ")
-                topic_member_id_end = script_content.find(",", topic_member_id_start)
-                topic_member_id = script_content[topic_member_id_start:topic_member_id_end].strip()
+            result = {
+                "平台": "汽车之家",
+                "浏览量": view_number.text if view_number else '0',
+                "回复量": reply_number.text if reply_number else '0',
+                "点赞量": praise_number.text if praise_number else '0',
+                "加精推荐": 'True' if any(soup.find_all('div', class_='stamp orange activate')) else 'False',
+                "作者id": topic_member_id,
+                "作者": topic_member_name,
+                "文章": url
+            }
+            return result
 
-                topic_member_name_start = script_content.find("topicMemberName: '") + len("topicMemberName: '")
-                topic_member_name_end = script_content.find("'", topic_member_name_start)
-                topic_member_name = script_content[topic_member_name_start:topic_member_name_end]
-
-
-        view_number = view_span.text if view_span else '0'
-        reply_number = reply_span.text if reply_span else '0'
-        praise_number = praise_span.text if praise_span and praise_span.text else '0'
-        author_id = topic_member_id
-        author_title = topic_member_name
-
-        
-        if soup.find_all('div', class_='stamp orange activate'):
-            recommand = 'True'
-        else:
-            recommand = 'False'
-
-        driver.quit()
-
-        temp = {
-            "平台": "汽车之家",
-            "浏览量": str(view_number),
-            "回复量": str(reply_number),
-            "点赞量": str(praise_number),
-            "加精推荐": str(recommand),
-            "作者id": str(author_id),
-            "作者": str(author_title),
-            "文章": str(url)
-        }
-
-        return temp
-
-    except Exception as e:
-        print("汽车之家在爬取过程中出现错误:", e)
-        driver.quit()
-        return None
+        except Exception as e:
+            print("汽车之家在爬取过程中出现错误:", e)
+            return None
 
 
 def scrape_autohome_urls(urls):
-    result = []
-
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [executor.submit(scrape_autohome_page_info, url) for url in urls]
-
-        with tqdm(total=len(futures), desc="汽车之家进度") as pbar:
-            for future in concurrent.futures.as_completed(futures):
-                result.append(future.result())
-                pbar.update(1)
-
-    return result
+        results = list(tqdm(executor.map(scrape_autohome_page_info, urls), total=len(urls), desc="汽车之家进度"))
+    return [result for result in results if result]  # 过滤掉None值

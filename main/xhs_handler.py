@@ -1,11 +1,12 @@
 import requests
 from bs4 import BeautifulSoup
 import concurrent.futures
-import json
 import re
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
+
+
 
 # 设置请求头和cookies
 def setup_request():
@@ -41,9 +42,9 @@ def get_page(link, header, cookie):
 def get_author_info(soup):
     try:
         script_tag = soup.find('script', type='application/ld+json')
-        json_str = script_tag.string.strip()
-        name = re.search(r'"author":\s*{\s*"@type":\s*"Person",\s*"name":\s*"([^"]+)"', json_str).group(1)
-        url = re.search(r'"url":\s*"([^"]+)"', json_str).group(1)
+        author_info = script_tag.string.strip()
+        name = re.search(r'"author":\s*{\s*"@type":\s*"Person",\s*"name":\s*"([^"]+)"', author_info).group(1)
+        url = re.search(r'"url":\s*"([^"]+)"', author_info).group(1)
         parsed_url = urlparse(url)
         path = parsed_url.path
         user_id = path.split("/")[-1]
@@ -60,13 +61,13 @@ def get_interaction_data(soup, url):
             script_text = script.text.strip()
             match = re.search(r'window\.__INITIAL_SSR_STATE__\s*=\s*({.*?})', script_text)
             if match:
-                data_json = match.group(1)
+                interaction_data = match.group(1)
                 break
 
-        likes_match = re.search(r'"likes"\s*:\s*"([^"]+)"', data_json)
-        collects_match = re.search(r'"collects"\s*:\s*(\d+)', data_json)
-        share_count_match = re.search(r'"shareCount"\s*:\s*(\d+)', data_json)
-        comments_match = re.search(r'"comments"\s*:\s*(\d+)', data_json)
+        likes_match = re.search(r'"likes"\s*:\s*"([^"]+)"', interaction_data)
+        collects_match = re.search(r'"collects"\s*:\s*(\d+)', interaction_data)
+        share_count_match = re.search(r'"shareCount"\s*:\s*(\d+)', interaction_data)
+        comments_match = re.search(r'"comments"\s*:\s*(\d+)', interaction_data)
         
         likes = likes_match.group(1) if likes_match else '0'
         collects = collects_match.group(1) if collects_match else '0'
@@ -93,7 +94,7 @@ def main(url, header, cookie):
         return {"平台":"小红书", **interaction_data, **author_info}
 
 
-def process_urls(urls):
+def scrape_xhs_urls(urls):
     header, cookie = setup_request()
 
     results = []

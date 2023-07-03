@@ -5,7 +5,8 @@ from tqdm import tqdm
 import concurrent.futures
 import requests
 
-cookies = {
+# 将cookies和headers设置为全局变量
+COOKIES = {
     'ttwid': '1%7CMRKDKFr-yjNzg6kuSYerbEL-z0rFvCRsCDUrwcW8OIg%7C1687757494%7Ceec0c5daf28c375dea832ed69de287c4b564df2cb071dcbb575c8d2afa3edb2c',
     'tt_webid': '7248863206289049143',
     'tt_web_version': 'new',
@@ -22,7 +23,7 @@ cookies = {
     '_ga': 'GA1.1.1729632978.1687757499',
 }
 
-headers = {
+HEADERS = {
     'authority': 'www.dongchedi.com',
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
     'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
@@ -39,84 +40,73 @@ headers = {
     'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
 }
 
-
 def get_dcd_page_source(url):
-    
     try:
-        response = requests.get(url, cookies=cookies, headers=headers)
+        response = requests.get(url, cookies=COOKIES, headers=HEADERS)
+        response.raise_for_status()
     except Exception as e:
         print(f"Exception occurred while navigating to {url}: {e}")
-        response = None
-    return response
+        return None
+    return response.text
 
 def scrape_dcd_dynamic_page(url):
+    page_source = get_dcd_page_source(url)
+    if not page_source:
+        return None
+
+    soup = BeautifulSoup(page_source, 'html.parser')
+    json_data = soup.find('script', id='__NEXT_DATA__')
+    if not json_data:
+        print("未找到包含JSON数据的标签")
+        return None
+
     try:
-        page_source = get_dcd_page_source(url)
-        if page_source:
-            soup = BeautifulSoup(page_source.text, 'html.parser')
-            json_data = soup.find('script', id='__NEXT_DATA__')
-            if json_data:
-                json_content = json_data.string
-                try:
-                    data = json.loads(json_content)
+        data = json.loads(json_data.string)
+    except json.JSONDecodeError:
+        print("JSON解析失败")
+        return None
 
-                    view_count = data['props']['pageProps']['articleData']['data']['read_count']
-                    share_count = data['props']['pageProps']['articleData']['data']['share_count']
-                    comment_count = data['props']['pageProps']['comment']['count']
-                    like_count = data['props']['pageProps']['articleData']['data']['digg_count']
-                    author_title = data['props']['pageProps']['articleData']['data']['motor_profile_info']['name']
-                    author_id = data['props']['pageProps']['articleData']['data']['motor_profile_info']['user_id']
-                    if data['props']['pageProps']['articleData']['data']['selected_tips']:
-                        recommand = 'True'
-                    else:
-                        recommand = 'False'
+    try:
+        view_count = data['props']['pageProps']['articleData']['data']['read_count']
+        share_count = data['props']['pageProps']['articleData']['data']['share_count']
+        comment_count = data['props']['pageProps']['comment']['count']
+        like_count = data['props']['pageProps']['articleData']['data']['digg_count']
+        author_title = data['props']['pageProps']['articleData']['data']['motor_profile_info']['name']
+        author_id = data['props']['pageProps']['articleData']['data']['motor_profile_info']['user_id']
+        recommand = 'True' if data['props']['pageProps']['articleData']['data']['selected_tips'] else 'False'
+    except KeyError as e:
+        print(f"KeyError: {e} 在解析JSON数据时未找到")
+        return None
 
-                    temp = {
-                        "平台": "懂车帝",
-                        "浏览量": str(view_count),
-                        "转发量": str(share_count),
-                        "回复量": str(comment_count),
-                        "点赞量": str(like_count),
-                        "加精": str(recommand),
-                        "作者id": str(author_id),
-                        "作者": str(author_title),
-                        "文章": str(url)
-                    }
+    return {
+        "平台": "懂车帝",
+        "浏览量": str(view_count),
+        "转发量": str(share_count),
+        "回复量": str(comment_count),
+        "点赞量": str(like_count),
+        "加精": str(recommand),
+        "作者id": str(author_id),
+        "作者": str(author_title),
+        "文章": str(url)
+    }
 
-                    return temp
-
-                except json.JSONDecodeError:
-                    print("JSON解析失败")
-            else:
-                print("未找到包含JSON数据的标签")
-    except Exception as e:
-        print("懂车帝爬取过程中出现错误:", e)
-    return None
 
 def extract_group_id(url):
-    pattern = r"(?:group_id|/article)/(\d+)"
-    match = re.search(pattern, url)
-    if match:
-        group_id = match.group(1)
-        return group_id
+    patterns = [r"group_id=(\d+)", r"/article/(\d+)"]
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    print("URL解析失败:", url)
     return None
 
 def scrape_dcd_urls(urls):
-    tasks = []
-    for url in urls:
-        group_id = extract_group_id(url)
-        if group_id is not None:
-            base_url = "https://www.dongchedi.com/ugc/article/"
-            new_url = base_url + group_id
-            task = (scrape_dcd_dynamic_page, new_url)  # 将函数和参数一起保存为元组
-            tasks.append(task)
-        else:
-            print("URL解析失败:", url)
+    tasks = [(scrape_dcd_dynamic_page, f"https://www.dongchedi.com/ugc/article/{extract_group_id(url)}") for url in urls if extract_group_id(url) is not None]
 
     results = []
     with tqdm(total=len(tasks), desc="懂车帝平台进度") as pbar:
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [executor.submit(func, arg) for func, arg in tasks]  # 在此处分别提取函数和参数
+            futures = [executor.submit(func, arg) for func, arg in tasks]
             for future in concurrent.futures.as_completed(futures):
                 result = future.result()
                 if result is not None:
@@ -124,11 +114,3 @@ def scrape_dcd_urls(urls):
                 pbar.update(1)
 
     return results
-
-
-
-
-
-
-
-
