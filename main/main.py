@@ -46,12 +46,12 @@ async def process_batch(urls, title):
 
 async def main():
     # 从外部文件读取URLs
-    with open("urls.txt", "r") as f:
+    with open("/Users/terrancew/Desktop/实习/main/urls.txt", "r") as f:
         urls = [url.strip() for url in f.readlines()]
 
     batch_size = 5
     num_batches = len(urls) // batch_size + (len(urls) % batch_size > 0)
-    title = str(datetime.now().strftime("%m-%d %H:%M"))+".json"
+    title = "/Users/terrancew/Desktop/实习/data/"+str(datetime.now().strftime("%m-%d %H:%M"))+".json"
     
     pbar = tqdm(total=len(urls), desc="处理 URL 进度")
 
