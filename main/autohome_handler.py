@@ -8,6 +8,9 @@ from bs4 import BeautifulSoup
 chrome_options = Options()
 chrome_options.add_argument('--blink-settings=imagesEnabled=false')
 
+def get_text(element):
+    return element.text.strip() if element and element.text.strip() else '0'
+
 def scrape_autohome_page_info(url):
     with webdriver.Chrome(options=chrome_options) as driver:
         try:
@@ -27,12 +30,13 @@ def scrape_autohome_page_info(url):
                 if script_content and '__TOPICINFO__' in script_content:
                     topic_member_id = script_content.split("topicMemberId: ",1)[1].split(",")[0].strip()
                     topic_member_name = script_content.split("topicMemberName: '",1)[1].split("'")[0]
+                
 
             result = {
                 "平台": "汽车之家",
-                "浏览量": view_number.text if view_number else '0',
-                "回复量": reply_number.text if reply_number else '0',
-                "点赞量": praise_number.text if praise_number else '0',
+                "浏览量": get_text(view_number),
+                "回复量": get_text(reply_number),
+                "点赞量": get_text(praise_number),
                 "加精推荐": 'True' if any(soup.find_all('div', class_='stamp orange activate')) else 'False',
                 "作者id": topic_member_id,
                 "作者": topic_member_name,
@@ -46,6 +50,7 @@ def scrape_autohome_page_info(url):
 
 
 def scrape_autohome_urls(urls):
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
         results = list(executor.map(scrape_autohome_page_info, urls))
     return [result for result in results if result]  # 过滤掉None值
+

@@ -97,7 +97,7 @@ def scrape_xhs_urls(urls):
     header, cookie = setup_request()
 
     results = []
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=50) as executor:
         futures = [executor.submit(main, url, header, cookie) for url in urls]
 
         #with tqdm(total=len(futures), desc="小红书进度") as pbar:

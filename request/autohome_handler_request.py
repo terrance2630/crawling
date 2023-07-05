@@ -2,6 +2,7 @@ import concurrent.futures
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 import requests
+import json
 
 cookies = {
     'fvlid': '1687835308440U2rirn6ip9',
@@ -34,6 +35,45 @@ headers = {
     'sec-ch-ua-mobile': '?0',
     'sec-ch-ua-platform': '"macOS"',
 }
+
+def get_article_info(topicids):
+    headers = {
+        'Accept': '*/*',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'Connection': 'keep-alive',
+        # 'Cookie': 'fvlid=1687835308440U2rirn6ip9; sessionid=F2F81D7E-B512-4E23-A6F3-1B87BBE2734F%7C%7C2023-06-27+11%3A08%3A47.499%7C%7C0; autoid=80c2bd907ad9987880b98b352d410cce; area=999999; __ah_uuid_ng=c_F2F81D7E-B512-4E23-A6F3-1B87BBE2734F; historybbsName4=c-6960%7C%E5%B9%BF%E6%B1%BD%E4%BC%A0%E7%A5%BAA79%2Cc-3495%7C%E4%BC%A0%E7%A5%BAGS3; sessionip=103.216.220.44; sessionvid=DB673795-0119-43E7-9ED6-9CC264AF2478; ahpvno=8; v_no=3; visit_info_ad=F2F81D7E-B512-4E23-A6F3-1B87BBE2734F||DB673795-0119-43E7-9ED6-9CC264AF2478||-1||-1||3; ref=0%7C0%7C0%7C0%7C2023-07-05+10%3A24%3A54.407%7C2023-06-27+11%3A08%3A47.499',
+        'If-Modified-Since': 'Wed, 05 Jul 2023 02:24:50 GMT',
+        'Referer': 'https://club.autohome.com.cn/bbs/thread/f11ad9e17bb65806/105732139-1.html',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+        'X-Requested-With': 'XMLHttpRequest',
+        'sec-ch-ua': '"Not.A/Brand";v="8", "Chromium";v="114", "Google Chrome";v="114"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"macOS"',
+    }
+    
+    params = {
+        'topicids': topicids,
+    }
+    response = requests.get(
+        'https://club.autohome.com.cn/frontapi/getclicksandreplys',
+        params=params,
+        cookies=cookies,
+        headers=headers,
+    )
+
+    data = json.loads(response.text)
+    'allreplys': 106
+    'views': 197
+    'memberid': 262806745
+
+    reply = data['result']['allreplys']
+
+
+
+
 
 
 def scrape_autohome_page_info(url):

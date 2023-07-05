@@ -1,94 +1,123 @@
 import concurrent.futures
 from bs4 import BeautifulSoup
 from tqdm import tqdm
-
+import json
 import requests
 
-cookies = {
-    'passport_csrf_token': '02b7b12965b97a09b9c4b399cc73126c',
-    'tt_webid': '7248933611839604282',
-    'ttcid': '23c752c151834b4c9518247705eaee1475',
-    'local_city_cache': '%E5%8C%97%E4%BA%AC',
-    'csrftoken': '4de5ffec509f0897bec2a8c7405a6906',
-    '_ga': 'GA1.1.682536941.1687773904',
-    's_v_web_id': 'verify_ljcp077a_5gVj3l2X_w2vI_4CQ7_9MIs_whHLJoETFebr',
-    '_S_WIN_WH': '1470_809',
-    '_S_DPR': '2',
-    '_S_IPAD': '0',
-    'msToken': 'cmrRgpCP-jsIvMo3SqJfSH8LRNrpoY1vt-za6QTTcZUfIbzW3mmRCgnUViWJPwNSZmluT4EynsRcUuh5leeoR73pJ9SIgjnEghbwEY9m7Vc=',
-    '_ga_QEHZPBE5HH': 'GS1.1.1688116265.8.1.1688118100.0.0.0',
-    'ttwid': '1%7C1iX7OSSDI7Lz9zV8CnApEsq_Y4FTzBlH8MjAVsz9XEc%7C1688118101%7C101b5537e40581b0ccd8b2bbe295de74d9f90e34d76ef2292ac0121da3f796e5',
-    'tt_scid': 'K05thr5cM0Qgt8.qrLU6xYahmzOCt769EcXwKJauZx4kclGyh0DKLNQqXhjOntHq0094',
-}
+def get_user_info(url):
+    try:
+        headers = {
+            'authority': 'www.toutiao.com',
+            'accept': 'application/json, text/plain, */*',
+            'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            # 'cookie': 'passport_csrf_token=02b7b12965b97a09b9c4b399cc73126c; tt_webid=7248933611839604282; ttcid=23c752c151834b4c9518247705eaee1475; local_city_cache=%E5%8C%97%E4%BA%AC; csrftoken=4de5ffec509f0897bec2a8c7405a6906; _ga=GA1.1.682536941.1687773904; s_v_web_id=verify_ljcp077a_5gVj3l2X_w2vI_4CQ7_9MIs_whHLJoETFebr; _S_WIN_WH=1470_809; _S_DPR=2; _S_IPAD=0; tt_scid=SCkf8Rx36nrIti7eFR5OvFbiKyek.bzEbjyeYoWL39Tr4HwfX1Y-rqzoq0pcIofj9efb; ttwid=1%7C1iX7OSSDI7Lz9zV8CnApEsq_Y4FTzBlH8MjAVsz9XEc%7C1688528473%7Cfd436e7d0a1c872f2505ed6a0dcdddc999c1e1652230204d7dd9a8916849453e; msToken=83BTAa7bRjC7ZdEPvKBKoLFnY6aG4xHW4bsMs1Xyls7-NY8j7tpn5gztBlkIVDI7mDnSr9tNWFjSr_JHzjH0Bboqia90D_21kSql_eXs7Ck=; _ga_QEHZPBE5HH=GS1.1.1688528464.15.0.1688528475.0.0.0',
+            'referer': 'https://www.toutiao.com/article/7235891710436459063/?channel=&source=search_tab',
+            'sec-ch-ua': '"Not.A/Brand";v="8", "Chromium";v="114", "Google Chrome";v="114"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"macOS"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+        }
+        params = {
+            'aid': '24',
+            'app_name': 'toutiao_web',
+            'offset': '0',
+            'count': '20',
+            'group_id': url,
+            'item_id': url,
+            '_signature': '_02B4Z6wo00f01bReIKAAAIDBLDW30aQZDwW0eiQAAAm0ySJtiPGiSdZb20ehCinMYwQoQfLAAFgoRmOVbHyoccOwc..75ICL3KIezNIEMjWCebI.lnN8C6SD0H45DbAa57TvU5ODl7aLmqLD25',
+        }
+        response = requests.get('https://www.toutiao.com/article/v2/tab_comments/', params=params, cookies=cookies, headers=headers)
+        data = json.loads(response.text)
+        user_name = data['group']['user_name']
+        user_id = data['group']['user_id']
+        comment = data['total_number']
+        return (str(comment), str(user_id), str(user_name))
+    except Exception as e:
+        print(f"Error in get_user_info: {e}")
+        return (None, None, None)
 
-headers = {
-    'authority': 'www.toutiao.com',
-    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-    'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
-    'cache-control': 'max-age=0',
-    # 'cookie': 'passport_csrf_token=02b7b12965b97a09b9c4b399cc73126c; tt_webid=7248933611839604282; ttcid=23c752c151834b4c9518247705eaee1475; local_city_cache=%E5%8C%97%E4%BA%AC; csrftoken=4de5ffec509f0897bec2a8c7405a6906; _ga=GA1.1.682536941.1687773904; s_v_web_id=verify_ljcp077a_5gVj3l2X_w2vI_4CQ7_9MIs_whHLJoETFebr; _S_WIN_WH=1470_809; _S_DPR=2; _S_IPAD=0; msToken=cmrRgpCP-jsIvMo3SqJfSH8LRNrpoY1vt-za6QTTcZUfIbzW3mmRCgnUViWJPwNSZmluT4EynsRcUuh5leeoR73pJ9SIgjnEghbwEY9m7Vc=; _ga_QEHZPBE5HH=GS1.1.1688116265.8.1.1688118100.0.0.0; ttwid=1%7C1iX7OSSDI7Lz9zV8CnApEsq_Y4FTzBlH8MjAVsz9XEc%7C1688118101%7C101b5537e40581b0ccd8b2bbe295de74d9f90e34d76ef2292ac0121da3f796e5; tt_scid=K05thr5cM0Qgt8.qrLU6xYahmzOCt769EcXwKJauZx4kclGyh0DKLNQqXhjOntHq0094',
-    'sec-ch-ua': '"Not.A/Brand";v="8", "Chromium";v="114", "Google Chrome";v="114"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"macOS"',
-    'sec-fetch-dest': 'document',
-    'sec-fetch-mode': 'navigate',
-    'sec-fetch-site': 'none',
-    'sec-fetch-user': '?1',
-    'upgrade-insecure-requests': '1',
-    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-}
-
-params = {
-    'channel': '',
-    'source': 'search_tab',
-}
+def get_like_count(url):
+    try:
+        cookies = {
+            'tt_search_log': 'eyJxdWVyeV9pbnB1dF90aW1lIjoxMTIyLCJzZWFyY2hfcHJlc3NfZHVyYXRpb24iOjkxLCJzZWFyY2hfdmlld3BvcnRfeCI6LTEsInNlYXJjaF92aWV3cG9ydF95IjotMX0=',
+            'passport_csrf_token': '02b7b12965b97a09b9c4b399cc73126c',
+            'tt_webid': '7248933611839604282',
+            'ttcid': '23c752c151834b4c9518247705eaee1475',
+            'local_city_cache': '%E5%8C%97%E4%BA%AC',
+            'csrftoken': '4de5ffec509f0897bec2a8c7405a6906',
+            '_ga': 'GA1.1.682536941.1687773904',
+            's_v_web_id': 'verify_ljcp077a_5gVj3l2X_w2vI_4CQ7_9MIs_whHLJoETFebr',
+            '_S_WIN_WH': '1470_809',
+            '_S_DPR': '2',
+            '_S_IPAD': '0',
+            'msToken': 'nPj_OKNvauecFtuoyHJjvl31nY6_ogWdgfHaGP4R2I108hmZUWcizhH4euV2kB9Z4FC8GXNaTOiKUBLZ9cIUiHFiI1js5a16uTMMAfiRXRQ=',
+            '_ga_QEHZPBE5HH': 'GS1.1.1688528464.15.1.1688528667.0.0.0',
+            'ttwid': '1%7C1iX7OSSDI7Lz9zV8CnApEsq_Y4FTzBlH8MjAVsz9XEc%7C1688528669%7Cc73558de93bdd2505fdf1b9b0201c69440e045e3191ec1efe1213b711ba7119f',
+            'tt_scid': 'DMXN71QYr801tXEzFcPQei7k2rk0DlbUKzsg6jn6xgYBdMlrxZmOZXXHARF0D1-p3596',
+        }
+        headers = {
+            'authority': 'www.toutiao.com',
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'cache-control': 'max-age=0',
+            # 'cookie': 'tt_search_log=eyJxdWVyeV9pbnB1dF90aW1lIjoxMTIyLCJzZWFyY2hfcHJlc3NfZHVyYXRpb24iOjkxLCJzZWFyY2hfdmlld3BvcnRfeCI6LTEsInNlYXJjaF92aWV3cG9ydF95IjotMX0=; passport_csrf_token=02b7b12965b97a09b9c4b399cc73126c; tt_webid=7248933611839604282; ttcid=23c752c151834b4c9518247705eaee1475; local_city_cache=%E5%8C%97%E4%BA%AC; csrftoken=4de5ffec509f0897bec2a8c7405a6906; _ga=GA1.1.682536941.1687773904; s_v_web_id=verify_ljcp077a_5gVj3l2X_w2vI_4CQ7_9MIs_whHLJoETFebr; _S_WIN_WH=1470_809; _S_DPR=2; _S_IPAD=0; msToken=nPj_OKNvauecFtuoyHJjvl31nY6_ogWdgfHaGP4R2I108hmZUWcizhH4euV2kB9Z4FC8GXNaTOiKUBLZ9cIUiHFiI1js5a16uTMMAfiRXRQ=; _ga_QEHZPBE5HH=GS1.1.1688528464.15.1.1688528667.0.0.0; ttwid=1%7C1iX7OSSDI7Lz9zV8CnApEsq_Y4FTzBlH8MjAVsz9XEc%7C1688528669%7Cc73558de93bdd2505fdf1b9b0201c69440e045e3191ec1efe1213b711ba7119f; tt_scid=DMXN71QYr801tXEzFcPQei7k2rk0DlbUKzsg6jn6xgYBdMlrxZmOZXXHARF0D1-p3596',
+            'sec-ch-ua': '"Not.A/Brand";v="8", "Chromium";v="114", "Google Chrome";v="114"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"macOS"',
+            'sec-fetch-dest': 'document',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-site': 'none',
+            'sec-fetch-user': '?1',
+            'upgrade-insecure-requests': '1',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+        }
+        params = {
+            'channel': '',
+            'source': 'search_tab',
+        }
+        response = requests.get(f'https://www.toutiao.com/article/{url}/', params=params, cookies=cookies, headers=headers)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        praise_span = soup.select_one('.detail-like span')
+        if praise_span:
+            praise_count = (praise_span.text)  
+            return praise_count
+        else:
+            print("未找到赞的数量")
+            return '-1'
+    except Exception as e:
+        print(f"Error in get_like_count: {e}")
+        return '-1'
 
 def scrape_toutiao_page_info(url):
-    
+    comment_count, user_id, user_name = get_user_info(url)
+    like_count = get_like_count(url)
 
-    try:
-        response = requests.get(url, params=params, cookies=cookies, headers=headers)
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        # 找到并打印点赞数量
-        like_count_div = soup.find('div', class_='digg-icon')
-        like_count = like_count_div.find_next_sibling('span').text
-
-        # 找到并打印评论数量
-        comment_count_div = soup.find('div', class_='detail-interaction-comment')
-        comment_count = comment_count_div.find('span').text
-
-        # 找到并打印用户主页和用户名
-        user_meta_div = soup.find('div', class_='article-meta')
-        user_name_span = user_meta_div.find('span', class_='name')
-        user_homepage = 'www.toutiao.com/'+user_name_span.find('a')['href']
-        user_name = user_name_span.text.strip()
-
-        result = {
-            '平台': "头条",
-            '评论数': comment_count,
-            '点赞数': like_count,
-            '用户名': user_name,
-            '用户主页': user_homepage,
-            "文章": url
-        }
-
-        return result
-
-    except Exception as e:
-        print("头条在爬取过程中出现错误:", e)
+    if comment_count is None or user_id is None or user_name is None or like_count == '-1':
+        print(f"Error while scraping url: {url}")
         return None
 
+    result = {
+        '平台': "头条",
+        '评论数': comment_count,
+        '点赞数': like_count,
+        '用户名': user_name,
+        '用户id': user_id,
+        "文章": url
+    }
+
+    return result
 
 def scrape_toutiao_urls(urls):
     result = []
-
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [executor.submit(scrape_toutiao_page_info, url) for url in urls]
-
         with tqdm(total=len(futures), desc="头条进度") as pbar:
             for future in concurrent.futures.as_completed(futures):
-                result.append(future.result())
+                res = future.result()
+                if res is not None:
+                    result.append(res)
                 pbar.update(1)
-
     return result

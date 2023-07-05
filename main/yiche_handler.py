@@ -41,6 +41,6 @@ def scrape_yiche_page_info(url):
 
 
 def scrape_yiche_urls(urls):
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
         results = list(executor.map(scrape_yiche_page_info, urls))
     return [result for result in results if result]  # 过滤掉None值

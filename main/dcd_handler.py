@@ -105,7 +105,7 @@ def scrape_dcd_urls(urls):
 
     results = []
     #with tqdm(total=len(tasks), desc="懂车帝平台进度") as pbar:
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
         futures = [executor.submit(func, arg) for func, arg in tasks]
         for future in concurrent.futures.as_completed(futures):
             result = future.result()
