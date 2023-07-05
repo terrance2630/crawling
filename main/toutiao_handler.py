@@ -82,7 +82,8 @@ def get_like_count(topic_id):
         soup = BeautifulSoup(response.text, 'html.parser')
         praise_span = soup.select_one('.detail-like span')
         if praise_span:
-            praise_count = (praise_span.text)  
+            praise_count = (praise_span.text)
+            praise_count = "0" if praise_count == "赞" else praise_count
             return praise_count
         else:
             print("未找到赞的数量")
