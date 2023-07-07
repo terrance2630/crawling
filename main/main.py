@@ -8,6 +8,7 @@ from yiche_handler import scrape_yiche_urls
 from xhs_handler import scrape_xhs_urls
 from toutiao_handler import scrape_toutiao_urls
 from datetime import datetime  
+from concurrent.futures import TimeoutError
 
 # 创建一个正则表达式字典来匹配每种URL
 url_patterns = {
@@ -18,49 +19,34 @@ url_patterns = {
     "toutiao": re.compile(r"(www\.)?toutiao\.com")
 }
 
-async def process_batch(urls, title):
-    tasks = {}
-    results = []
-
+async def process_url(url, title):
     for component, pattern in url_patterns.items():
-        # 创建一个URL列表，匹配给定的组件模式
-        component_urls = [url for url in urls if pattern.search(url)]
-        if component_urls:
-            # 为每个组件创建一个任务，并将其存储在字典中
-            task = loop.run_in_executor(None, globals()[f"scrape_{component}_urls"], component_urls)
-            tasks[component] = task
-
-    # 等待所有任务完成，并收集结果
-    for component, task in tasks.items():
-        result = await task
-        results += result
-
-    # 将结果写入文件
-    with open(title, 'a', encoding='utf-8') as f:
-        for result in results:
-            json.dump(result, f, ensure_ascii=False)
-            f.write('\n')
-
-    # 返回处理的 URL 数量
-    return len(urls)
+        # 匹配 URL
+        if pattern.search(url):
+            # 使用 asyncio 的 wait_for 来设置超时，这样在特定时间内任务还未完成，就会抛出一个异常，我们可以捕获它并继续进行
+            try:
+                result = await loop.run_in_executor(None, globals()[f"scrape_{component}_urls"], [url])
+                if result and result[0]:  # 确保结果不是空的
+                    with open(title, 'a', encoding='utf-8') as f:
+                        json.dump(result[0], f, ensure_ascii=False)
+                        f.write('\n')
+            except (Exception, TimeoutError):  # 捕获所有的异常包括超时异常
+                print(f"Error occurred while processing url {url}")
+            finally:
+                return
 
 async def main():
     # 从外部文件读取URLs
     with open("/Users/terrancew/Desktop/实习/main/urls.txt", "r") as f:
         urls = [url.strip() for url in f.readlines()]
 
-    batch_size = 5
-    num_batches = len(urls) // batch_size + (len(urls) % batch_size > 0)
-    title = "/Users/terrancew/Desktop/实习/data/"+str(datetime.now().strftime("%m-%d %H:%M"))+".json"
+    title = "/Users/terrancew/Desktop/实习/data/"+str(datetime.now().strftime("%m-%d-%H-%M"))+".json"
     
     pbar = tqdm(total=len(urls), desc="处理 URL 进度")
 
-    for batch_index in range(num_batches):
-        start_index = batch_index * batch_size
-        end_index = start_index + batch_size
-        batch_urls = urls[start_index:end_index]
-        processed_url_count = await process_batch(batch_urls, title)
-        pbar.update(processed_url_count)
+    for url in urls:
+        await process_url(url, title)
+        pbar.update()
 
     pbar.close()
     print(f"数据已保存到 {title} 文件")

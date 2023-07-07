@@ -1,9 +1,13 @@
 import json
 import re
 from bs4 import BeautifulSoup
-#from tqdm import tqdm
+from tqdm import tqdm
 import concurrent.futures
 import requests
+from datetime import datetime  
+
+TIMEOUT = 10
+DIR = "dcd/"
 
 # 将cookies和headers设置为全局变量
 COOKIES = {
@@ -42,7 +46,7 @@ HEADERS = {
 
 def get_dcd_page_source(url):
     try:
-        response = requests.get(url, cookies=COOKIES, headers=HEADERS)
+        response = requests.get(url, cookies=COOKIES, headers=HEADERS, timeout=TIMEOUT)
         response.raise_for_status()
     except Exception as e:
         print(f"Exception occurred while navigating to {url}: {e}")
@@ -100,17 +104,23 @@ def extract_group_id(url):
     print("URL解析失败:", url)
     return None
 
-def scrape_dcd_urls(urls):
-    tasks = [(scrape_dcd_dynamic_page, f"https://www.dongchedi.com/ugc/article/{extract_group_id(url)}") for url in urls if extract_group_id(url) is not None]
+def scrape_and_save_dcd_urls(urls, filename):
+    with tqdm(total=len(urls), desc="懂车帝平台进度") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+            futures = [executor.submit(scrape_dcd_dynamic_page, f"https://www.dongchedi.com/ugc/article/{extract_group_id(url)}") for url in urls if extract_group_id(url) is not None]
+            for future in concurrent.futures.as_completed(futures):
+                result = future.result()
+                if result is not None:
+                    with open(filename, 'a', encoding='utf-8') as f:
+                        f.write(json.dumps(result, ensure_ascii=False) + "\n")
+                pbar.update(1)
 
-    results = []
-    #with tqdm(total=len(tasks), desc="懂车帝平台进度") as pbar:
-    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-        futures = [executor.submit(func, arg) for func, arg in tasks]
-        for future in concurrent.futures.as_completed(futures):
-            result = future.result()
-            if result is not None:
-                results.append(result)
-                #pbar.update(1)
+def process_urls(urls):
+    title = DIR+"dcd_data"+str(datetime.now().strftime("%m-%d-%H-%M"))+".json"
+    scrape_and_save_dcd_urls(urls, title)
 
-    return results
+if __name__ == "__main__":
+    with open(DIR+"dcd_url.txt", 'r') as f:
+        urls = [line.strip() for line in f]
+    process_urls(urls)
+

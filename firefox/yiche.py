@@ -4,6 +4,7 @@ from selenium.webdriver.firefox.options import Options
 from bs4 import BeautifulSoup
 
 firefox_options = Options()
+firefox_options.add_argument('--headless')
 firefox_options.set_preference('permissions.default.image', 2)  # 禁止加载图片
 
 def scrape_yiche_page_info(url):

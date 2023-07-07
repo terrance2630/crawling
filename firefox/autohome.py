@@ -14,7 +14,7 @@ def scrape_autohome_page_info(url):
     with webdriver.Firefox(options=firefox_options) as driver:
         try:
             #driver.minimize_window()
-            driver.execute_script(url)
+            driver.get(url)
 
             soup = BeautifulSoup(driver.page_source, 'html.parser')
 

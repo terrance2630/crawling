@@ -1,9 +1,22 @@
+import asyncio
+import json
 import concurrent.futures
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from bs4 import BeautifulSoup
+from datetime import datetime  
+from concurrent.futures import TimeoutError
+from tqdm import tqdm
+import random
+import re
+from datetime import datetime  
 
+
+DIR = "autohome/"
+
+# 创建正则表达式对象
+autohome_pattern = re.compile(r"(www\.)?autohome\.com\.cn")
 firefox_options = Options()
 firefox_options.set_preference('permissions.default.image', 2)  # 禁止加载图片
 
@@ -14,7 +27,7 @@ def scrape_autohome_page_info(url):
     with webdriver.Firefox(options=firefox_options) as driver:
         try:
             #driver.minimize_window()
-            driver.execute_script(url)
+            driver.get(url)
 
             soup = BeautifulSoup(driver.page_source, 'html.parser')
 
@@ -44,9 +57,40 @@ def scrape_autohome_page_info(url):
         except Exception as e:
             print("汽车之家在爬取过程中出现错误:", e)
             return None
+        
+async def process_url(url, title):
+    # 检查 URL 是否匹配正则表达式
+    if not autohome_pattern.search(url):
+        return
+
+    try:
+        result = await loop.run_in_executor(None, scrape_autohome_page_info, url)
+        if result:  # 确保结果不是空的
+            with open(title, 'a', encoding='utf-8') as f:
+                json.dump(result, f, ensure_ascii=False)
+                f.write('\n')
+    except (Exception, TimeoutError):  # 捕获所有的异常包括超时异常
+        print(f"Error occurred while processing url {url}")
+    finally:
+        await asyncio.sleep(random.uniform(1.0, 3.0))  # 随机等待1到3秒
+        return
 
 
-def scrape_autohome_urls(urls):
-    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-        results = list(executor.map(scrape_autohome_page_info, urls))
-    return [result for result in results if result]  # 过滤掉None值
+async def main():
+    # 从外部文件读取URLs
+    with open(DIR+"autohome_url.txt", "r") as f:
+        urls = [url.strip() for url in f.readlines()]
+    title = DIR+"autohome_data"+str(datetime.now().strftime("%m-%d-%H-%M"))+".json"
+    
+    pbar = tqdm(total=len(urls), desc="汽车之家进度")
+
+    for url in urls:
+        await process_url(url, title)
+        pbar.update()
+
+    pbar.close()
+    print(f"数据已保存到 {title} 文件")
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
