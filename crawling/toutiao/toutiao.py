@@ -5,10 +5,80 @@ import re
 import requests
 from datetime import datetime  
 from tqdm import tqdm
+import mysql.connector
 
+
+try:
+    cnx = mysql.connector.connect(
+        host='localhost',
+        user='root',
+        password='dasheng202307',
+        database='crawling_data'
+    )
+except mysql.connector.Error as err:
+    if err.errno == mysql.connector.errorcode.ER_BAD_DB_ERROR:
+        # 如果数据库不存在，创建新的数据库
+        cnx = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='dasheng202307',
+        )
+        cursor = cnx.cursor()
+        cursor.execute("CREATE DATABASE crawling_data")
+        cnx.database = 'crawling_data'
+    else:
+        raise
+
+cursor = cnx.cursor()
+
+now = datetime.now()
+table_name = 'toutiao_data'
+written_time = now.strftime('%Y_%m_%d')
+
+# 创建新表
+create_table_query = f"""
+CREATE TABLE IF NOT EXISTS {table_name} (
+    platform VARCHAR(255),
+    comments VARCHAR(255),
+    likes VARCHAR(255),
+    username VARCHAR(5000),
+    user_id VARCHAR(5000),
+    article_link TEXT,
+    written_time VARCHAR(255)
+)
+"""
+cursor.execute(create_table_query)
 DIR = "toutiao/"
 TIMEOUT = 10
 URL_PATTERN = re.compile(r"(www\.)?toutiao\.com")
+
+
+def save_to_sql(result):
+    # 在新表中插入数据
+    insert_query = f"""
+    INSERT INTO {table_name} (
+        platform,
+        comments,
+        likes,
+        username,
+        user_id,
+        article_link,
+        written_time
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
+    values = (
+        result['平台'],
+        result['评论数'],
+        result['点赞数'],
+        result['用户名'],
+        result['用户id'],
+        result['文章'],
+        written_time
+    )
+    cursor.execute(insert_query, values)
+
+    # 提交事务
+    cnx.commit()
 
 def get_user_info(topic_id):
     try:
@@ -135,9 +205,13 @@ def scrape_toutiao_page_info(url, title):
         "文章": url
     }
 
+    
+
     with open(DIR+title+".json", 'a', encoding='utf-8') as f:
         f.write(json.dumps(result, ensure_ascii=False))
         f.write("\n")  # Add a newline to separate each entry
+    
+    
 
 def process_urls(urls):
     title = "toutiao_data" + str(datetime.now().strftime("%m-%d-%H-%M"))
@@ -147,6 +221,11 @@ def process_urls(urls):
 
             for future in concurrent.futures.as_completed(futures):
                 pbar.update(1)
+
+    with open(DIR+title+".json", 'r', encoding='utf-8') as f:
+        for line in f:
+            result = json.loads(line.strip())
+            save_to_sql(result)
 
 if __name__ == "__main__":
     with open(DIR+"toutiao_url.txt", 'r') as f:

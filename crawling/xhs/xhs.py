@@ -7,9 +7,87 @@ from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 from datetime import datetime  
 import json
+import mysql.connector
 
+
+try:
+    cnx = mysql.connector.connect(
+        host='localhost',
+        user='root',
+        password='dasheng202307',
+        database='crawling_data'
+    )
+except mysql.connector.Error as err:
+    if err.errno == mysql.connector.errorcode.ER_BAD_DB_ERROR:
+        # 如果数据库不存在，创建新的数据库
+        cnx = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='dasheng202307',
+        )
+        cursor = cnx.cursor()
+        cursor.execute("CREATE DATABASE crawling_data")
+        cnx.database = 'crawling_data'
+    else:
+        raise
+
+
+cursor = cnx.cursor()
+
+now = datetime.now()
+table_name = 'xhs_data'
+written_time = now.strftime('%Y_%m_%d')
+
+# 创建新表
+create_table_query = f"""
+CREATE TABLE IF NOT EXISTS {table_name} (
+    platform VARCHAR(255),
+    likes VARCHAR(255),
+    collects VARCHAR(255),
+    shares VARCHAR(255),
+    comments VARCHAR(255),
+    article_link TEXT,
+    username VARCHAR(5000),
+    user_id VARCHAR(5000),
+    user_link TEXT,
+    written_time VARCHAR(255)
+)
+"""
+cursor.execute(create_table_query)
 DIR = "xhs/"
 TIMEOUT = 10
+
+def save_to_sql(result):
+    # 在新表中插入数据
+    insert_query = f"""
+    INSERT INTO {table_name} (
+        platform,
+        likes,
+        collects,
+        shares,
+        comments,
+        article_link,
+        username,
+        user_id,
+        user_link,
+        written_time
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """ 
+    values = (
+        result['平台'],
+        result['点赞数'],
+        result['收藏数'],
+        result['分享数'],
+        result['评论数'],
+        result['文章'],
+        result['作者'],
+        result['作者ID'],
+        result['作者主页'],
+        written_time
+    )
+    
+    cursor.execute(insert_query, values)
+    cnx.commit()
 
 # 设置请求头和cookies
 def setup_request():
@@ -123,6 +201,11 @@ def process_urls(urls):
                         f.write(json.dumps(result, ensure_ascii=False))
                         f.write("\n")  # Add a newline to separate each entry
                 pbar.update(1)
+
+    with open(DIR + title + ".json", 'r', encoding='utf-8') as f:
+        for line in f:
+            result = json.loads(line.strip())
+            save_to_sql(result)
 
 if __name__ == "__main__":
     with open(DIR + "xhs_url.txt", 'r') as f:

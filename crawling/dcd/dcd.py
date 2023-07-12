@@ -5,9 +5,90 @@ from tqdm import tqdm
 import concurrent.futures
 import requests
 from datetime import datetime  
+import mysql.connector
+
+
+try:
+    cnx = mysql.connector.connect(
+        host='localhost',
+        user='root',
+        password='dasheng202307',
+        database='crawling_data'
+    )
+except mysql.connector.Error as err:
+    if err.errno == mysql.connector.errorcode.ER_BAD_DB_ERROR:
+        # 如果数据库不存在，创建新的数据库
+        cnx = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='dasheng202307',
+        )
+        cursor = cnx.cursor()
+        cursor.execute("CREATE DATABASE crawling_data")
+        cnx.database = 'crawling_data'
+    else:
+        raise
+
+cursor = cnx.cursor()
+
+now = datetime.now()
+table_name = 'dcd_data'
+written_time = now.strftime('%Y_%m_%d')
+
+# 创建新表
+create_table_query = f"""
+CREATE TABLE IF NOT EXISTS {table_name} (
+    platform VARCHAR(255),
+    views VARCHAR(255),
+    shares VARCHAR(255),
+    comments VARCHAR(255),
+    likes VARCHAR(255),
+    recommended VARCHAR(255),
+    user_id VARCHAR(5000),
+    username VARCHAR(5000),
+    article_link TEXT,
+    written_time VARCHAR(255)
+)
+"""
+cursor.execute(create_table_query)
 
 TIMEOUT = 10
 DIR = "dcd/"
+
+
+def save_to_sql(result):
+    # 在新表中插入数据
+    insert_query = f"""
+    INSERT INTO {table_name} (
+        platform,
+        views,
+        shares,
+        comments,
+        likes,
+        recommended,
+        user_id,
+        username,
+        article_link,
+        written_time
+    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+    values = (
+        result['平台'],
+        result['浏览数'],
+        result['转发数'],
+        result['回复数'],
+        result['点赞数'],
+        result['加精'],
+        result['作者id'],
+        result['作者'],
+        result['文章'],
+        written_time
+    )
+    cursor.execute(insert_query, values)
+
+    # 提交事务
+    cnx.commit()
+
 
 # 将cookies和headers设置为全局变量
 COOKIES = {
@@ -81,8 +162,7 @@ def scrape_dcd_dynamic_page(url):
     except KeyError as e:
         print(f"KeyError: {e} 在解析JSON数据时未找到")
         return None
-
-    return {
+    result = {
         "平台": "懂车帝",
         "浏览数": str(view_count),
         "转发数": str(share_count),
@@ -93,6 +173,7 @@ def scrape_dcd_dynamic_page(url):
         "作者": str(author_title),
         "文章": str(url)
     }
+    return result
 
 
 def extract_group_id(url):
@@ -118,6 +199,10 @@ def scrape_and_save_dcd_urls(urls, filename):
 def process_urls(urls):
     title = DIR+"dcd_data"+str(datetime.now().strftime("%m-%d-%H-%M"))+".json"
     scrape_and_save_dcd_urls(urls, title)
+    with open(title, 'r', encoding='utf-8') as f:
+        for line in f:
+            result = json.loads(line.strip())
+            save_to_sql(result)
 
 if __name__ == "__main__":
     with open(DIR+"dcd_url.txt", 'r') as f:

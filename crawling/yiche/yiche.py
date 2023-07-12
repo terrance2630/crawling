@@ -6,6 +6,49 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 from datetime import datetime  
 import json
+import mysql.connector
+import re
+
+try:
+    cnx = mysql.connector.connect(
+        host='localhost',
+        user='root',
+        password='dasheng202307',
+        database='crawling_data'
+    )
+except mysql.connector.Error as err:
+    if err.errno == mysql.connector.errorcode.ER_BAD_DB_ERROR:
+        # 如果数据库不存在，创建新的数据库
+        cnx = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='dasheng202307',
+        )
+        cursor = cnx.cursor()
+        cursor.execute("CREATE DATABASE crawling_data")
+        cnx.database = 'crawling_data'
+    else:
+        raise
+
+cursor = cnx.cursor()
+
+now = datetime.now()
+table_name = 'yiche_data'
+written_time = now.strftime('%Y_%m_%d')
+
+
+# 创建新表
+create_table_query = f"""
+CREATE TABLE IF NOT EXISTS {table_name} (
+    platform VARCHAR(255),
+    comments VARCHAR(255),
+    likes VARCHAR(255),
+    authorinfo TEXT,
+    article_link TEXT,
+    written_time VARCHAR(255)
+)
+"""
+cursor.execute(create_table_query)
 
 DIR = "yiche/"
 
@@ -16,6 +59,32 @@ firefox_options.set_preference('dom.webdriver.enabled', False)
 firefox_options.set_preference('javascript.enabled', False)
 firefox_options.set_preference('webdriver.load.strategy', 'unstable')
 firefox_options.set_preference('browser.download.manager.showWhenStarting', False)
+
+
+def save_to_sql(result):
+    # 在新表中插入数据
+    insert_query = f"""
+    INSERT INTO {table_name} (
+        platform,
+        comments,
+        likes,
+        authorinfo,
+        article_link,
+        written_time
+    ) VALUES (%s, %s, %s, %s, %s, %s)
+    """
+    values = (
+        result['平台'],
+        result['评论数'],
+        result['点赞数'],
+        json.dumps(result['作者列表'], ensure_ascii=False),
+        result['文章'],
+        written_time
+    )
+    cursor.execute(insert_query, values)
+    # 提交事务
+    cnx.commit()
+
 
 def scrape_yiche_page_info(url):
     try:
@@ -28,14 +97,16 @@ def scrape_yiche_page_info(url):
             comment_number = soup.find('li', class_='news-detail-position-pinglun').find('a').text.strip()
             like_number = soup.find('li', class_='news-detail-position-dianzan').find('a').text.strip()
 
-            authors = soup.find_all('div', class_='author-box')
+            authors = soup.find_all('a', class_='news-detail-profile-active')
             author_list = []
             for author in authors:
-                author_id = author.find('a', class_='button attention-button').get('data-id')
+                author_link = author['href']
+                author_id = re.search(r'u(\d+)', author_link).group(1)
+
                 author_list.append({
-                    '作者名字': author.find('p', class_='author-name').text.strip(),
+                    '作者名字': author.get_text(),
                     '作者ID': author_id,
-                    '作者主页': f"https://i.yiche.com/u{author_id}/!article/"
+                    '作者主页': author_link
                 })
 
             return {
@@ -60,6 +131,10 @@ def scrape_yiche_urls(urls, title):
                         f.write(json.dumps(result, ensure_ascii=False))
                         f.write("\n")  # Add a newline to separate each entry
                 pbar.update(1)
+    with open(DIR + title + ".json", 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            result = json.loads(line)
+            save_to_sql(result)
 
 
 def main():
