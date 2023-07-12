@@ -23,6 +23,11 @@
 *.rar
 *.tar
 *.zip
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
 
 # Logs and databases #
 ######################
